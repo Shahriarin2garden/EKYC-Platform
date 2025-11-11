@@ -1,20 +1,25 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { kycApi } from '../services/api';
+import { KycFormData, ValidationErrors, FormStatus } from '../types';
 
-function KycForm() {
-  const [formData, setFormData] = useState({
+function KycForm(): JSX.Element {
+  const [formData, setFormData] = useState<KycFormData>({
     name: '',
     email: '',
     address: '',
     nid: '',
     occupation: ''
   });
-  const [status, setStatus] = useState({ type: '', message: '', summary: '' });
-  const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState({});
-  const [focusedField, setFocusedField] = useState('');
+  const [status, setStatus] = useState<FormStatus>({ type: '', message: '', summary: '' });
+  const [loading, setLoading] = useState<boolean>(false);
+  const [errors, setErrors] = useState<ValidationErrors>({});
+  const [focusedField, setFocusedField] = useState<string>('');
 
-  const validateField = (name, value) => {
+  // Autosave draft to localStorage to avoid data loss
+  const draftKey = 'kyc-form-draft';
+  const saveTimeout = useRef<number | null>(null);
+
+  const validateField = (name: keyof KycFormData, value: string): string => {
     switch (name) {
       case 'name':
         return value.length < 2 ? 'Name must be at least 2 characters' : '';
@@ -27,25 +32,57 @@ function KycForm() {
     }
   };
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target as HTMLInputElement | HTMLTextAreaElement;
+    const nameKey = name as keyof KycFormData;
+    setFormData({ ...formData, [nameKey]: value } as KycFormData);
     
     // Real-time validation
-    const error = validateField(name, value);
-    setErrors({ ...errors, [name]: error });
+    const error = validateField(nameKey, value);
+    setErrors({ ...errors, [String(nameKey)]: error });
   };
 
-  const handleSubmit = async (e) => {
+  // Load draft on mount
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(draftKey);
+      if (raw) {
+        const parsed = JSON.parse(raw) as Partial<KycFormData>;
+        setFormData((prev) => ({ ...prev, ...parsed }));
+      }
+    } catch (err) {
+      // ignore parse errors
+    }
+  }, []);
+
+  // Save draft with debounce
+  useEffect(() => {
+    if (saveTimeout.current) {
+      window.clearTimeout(saveTimeout.current);
+    }
+    // Save after a short debounce
+    saveTimeout.current = window.setTimeout(() => {
+      try {
+        localStorage.setItem(draftKey, JSON.stringify(formData));
+      } catch (err) {
+        // ignore localStorage failures (storage full, etc.)
+      }
+    }, 700) as unknown as number;
+    return () => {
+      if (saveTimeout.current) window.clearTimeout(saveTimeout.current);
+    };
+  }, [formData]);
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
     setStatus({ type: '', message: '', summary: '' });
 
     // Final validation
-    const newErrors = {};
-    Object.keys(formData).forEach(key => {
-      const error = validateField(key, formData[key]);
-      if (error) newErrors[key] = error;
+    const newErrors: ValidationErrors = {};
+    (Object.keys(formData) as (keyof KycFormData)[]).forEach((key) => {
+      const error = validateField(key, String(formData[key] ?? ''));
+      if (error) newErrors[String(key)] = error;
     });
 
     if (Object.keys(newErrors).length > 0) {
@@ -58,24 +95,55 @@ function KycForm() {
       const response = await kycApi.submit(formData);
       setStatus({ 
         type: 'success', 
-        message: 'KYC submitted successfully! ✨', 
+        message: 'KYC submitted successfully! ✨',
         summary: response.data.summary || 'AI summary generated.'
       });
       setFormData({ name: '', email: '', address: '', nid: '', occupation: '' });
       setErrors({});
-      
+      // Clear saved draft on success
+      try { localStorage.removeItem(draftKey); } catch (err) {}
       // Auto-hide success message after 10 seconds
       setTimeout(() => {
         setStatus({ type: '', message: '', summary: '' });
       }, 10000);
-    } catch (error) {
+    } catch (err: any) {
       setStatus({ 
         type: 'error', 
-        message: error.response?.data?.message || 'Failed to submit KYC. Please try again.' 
+        message: err?.response?.data?.message || 'Failed to submit KYC. Please try again.' 
       });
     } finally {
       setLoading(false);
     }
+  };
+
+  const clearDraft = () => {
+    setFormData({ name: '', email: '', address: '', nid: '', occupation: '' });
+    setErrors({});
+    try { localStorage.removeItem(draftKey); } catch (err) {}
+  };
+
+  const copySummaryToClipboard = async () => {
+    if (!status.summary) return;
+    try {
+      await navigator.clipboard.writeText(status.summary);
+      setStatus((s) => ({ ...s, message: 'Summary copied to clipboard.' }));
+      setTimeout(() => setStatus((s) => ({ ...s, message: '' })), 2000);
+    } catch (err) {
+      // ignore
+    }
+  };
+
+  const downloadSummary = () => {
+    if (!status.summary) return;
+    const blob = new Blob([status.summary], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'kyc-summary.txt';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -185,7 +253,7 @@ function KycForm() {
                 onChange={handleChange}
                 onFocus={() => setFocusedField('address')}
                 onBlur={() => setFocusedField('')}
-                rows="3"
+                rows={3}
                 className={`w-full px-5 py-4 border-2 rounded-xl transition-all duration-200 outline-none resize-none ${
                   focusedField === 'address'
                     ? 'border-blue-500 bg-blue-50 shadow-lg'

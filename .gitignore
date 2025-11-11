@@ -43,3 +43,7 @@ Thumbs.db
 
 # Optional eslint cache
 .eslintcache
+
+# Documentation (temporary exclusion)
+docs/
+
