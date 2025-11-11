@@ -23,8 +23,10 @@ function KycForm(): JSX.Element {
     switch (name) {
       case 'name':
         return value.length < 2 ? 'Name must be at least 2 characters' : '';
-      case 'email':
-        return !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) ? 'Invalid email address' : '';
+      case 'email': {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return emailRegex.test(value) ? '' : 'Invalid email address';
+      }
       case 'nid':
         return value && value.length < 5 ? 'NID must be at least 5 characters' : '';
       default:
@@ -51,25 +53,25 @@ function KycForm(): JSX.Element {
         setFormData((prev) => ({ ...prev, ...parsed }));
       }
     } catch (err) {
-      // ignore parse errors
+      console.warn('Failed to load draft from localStorage:', err);
     }
   }, []);
 
   // Save draft with debounce
   useEffect(() => {
     if (saveTimeout.current) {
-      window.clearTimeout(saveTimeout.current);
+      globalThis.clearTimeout(saveTimeout.current);
     }
     // Save after a short debounce
-    saveTimeout.current = window.setTimeout(() => {
+    saveTimeout.current = globalThis.setTimeout(() => {
       try {
         localStorage.setItem(draftKey, JSON.stringify(formData));
       } catch (err) {
-        // ignore localStorage failures (storage full, etc.)
+        console.warn('Failed to save draft to localStorage:', err);
       }
     }, 700) as unknown as number;
     return () => {
-      if (saveTimeout.current) window.clearTimeout(saveTimeout.current);
+      if (saveTimeout.current) globalThis.clearTimeout(saveTimeout.current);
     };
   }, [formData]);
 
@@ -80,10 +82,13 @@ function KycForm(): JSX.Element {
 
     // Final validation
     const newErrors: ValidationErrors = {};
-    (Object.keys(formData) as (keyof KycFormData)[]).forEach((key) => {
+    const formKeys = Object.keys(formData) as (keyof KycFormData)[];
+    for (const key of formKeys) {
       const error = validateField(key, String(formData[key] ?? ''));
-      if (error) newErrors[String(key)] = error;
-    });
+      if (error) {
+        newErrors[String(key)] = error;
+      }
+    }
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -101,7 +106,11 @@ function KycForm(): JSX.Element {
       setFormData({ name: '', email: '', address: '', nid: '', occupation: '' });
       setErrors({});
       // Clear saved draft on success
-      try { localStorage.removeItem(draftKey); } catch (err) {}
+      try {
+        localStorage.removeItem(draftKey);
+      } catch (err) {
+        console.warn('Failed to clear draft from localStorage:', err);
+      }
       // Auto-hide success message after 10 seconds
       setTimeout(() => {
         setStatus({ type: '', message: '', summary: '' });
@@ -116,34 +125,15 @@ function KycForm(): JSX.Element {
     }
   };
 
-  const clearDraft = () => {
-    setFormData({ name: '', email: '', address: '', nid: '', occupation: '' });
-    setErrors({});
-    try { localStorage.removeItem(draftKey); } catch (err) {}
-  };
-
-  const copySummaryToClipboard = async () => {
-    if (!status.summary) return;
-    try {
-      await navigator.clipboard.writeText(status.summary);
-      setStatus((s) => ({ ...s, message: 'Summary copied to clipboard.' }));
-      setTimeout(() => setStatus((s) => ({ ...s, message: '' })), 2000);
-    } catch (err) {
-      // ignore
+  // Helper function to get input class names
+  const getInputClassName = (fieldName: string, hasError: boolean): string => {
+    if (hasError) {
+      return 'border-red-400 bg-red-50';
     }
-  };
-
-  const downloadSummary = () => {
-    if (!status.summary) return;
-    const blob = new Blob([status.summary], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'kyc-summary.txt';
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
+    if (focusedField === fieldName) {
+      return 'border-blue-500 bg-blue-50 shadow-lg';
+    }
+    return 'border-gray-200 hover:border-gray-300';
   };
 
   return (
@@ -182,13 +172,7 @@ function KycForm(): JSX.Element {
                   onFocus={() => setFocusedField('name')}
                   onBlur={() => setFocusedField('')}
                   required
-                  className={`w-full px-5 py-4 border-2 rounded-xl transition-all duration-200 outline-none ${
-                    errors.name 
-                      ? 'border-red-400 bg-red-50' 
-                      : focusedField === 'name'
-                      ? 'border-blue-500 bg-blue-50 shadow-lg'
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
+                  className={`w-full px-5 py-4 border-2 rounded-xl transition-all duration-200 outline-none ${getInputClassName('name', Boolean(errors.name))}`}
                   placeholder="John Doe"
                 />
                 <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
@@ -219,13 +203,7 @@ function KycForm(): JSX.Element {
                   onFocus={() => setFocusedField('email')}
                   onBlur={() => setFocusedField('')}
                   required
-                  className={`w-full px-5 py-4 border-2 rounded-xl transition-all duration-200 outline-none ${
-                    errors.email 
-                      ? 'border-red-400 bg-red-50' 
-                      : focusedField === 'email'
-                      ? 'border-blue-500 bg-blue-50 shadow-lg'
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
+                  className={`w-full px-5 py-4 border-2 rounded-xl transition-all duration-200 outline-none ${getInputClassName('email', Boolean(errors.email))}`}
                   placeholder="john.doe@example.com"
                 />
                 <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
@@ -278,13 +256,7 @@ function KycForm(): JSX.Element {
                   onChange={handleChange}
                   onFocus={() => setFocusedField('nid')}
                   onBlur={() => setFocusedField('')}
-                  className={`w-full px-5 py-4 border-2 rounded-xl transition-all duration-200 outline-none ${
-                    errors.nid 
-                      ? 'border-red-400 bg-red-50' 
-                      : focusedField === 'nid'
-                      ? 'border-blue-500 bg-blue-50 shadow-lg'
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
+                  className={`w-full px-5 py-4 border-2 rounded-xl transition-all duration-200 outline-none ${getInputClassName('nid', Boolean(errors.nid))}`}
                   placeholder="NID-123456"
                 />
                 {errors.nid && (

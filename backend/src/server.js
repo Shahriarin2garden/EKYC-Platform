@@ -26,9 +26,23 @@ app.post('/api/kyc/submit', async (req, res) => {
   try {
     const { name, email, address, nid, occupation } = req.body;
     
-    // TODO: Add validation
-    // TODO: Save to database
-    // TODO: Generate AI summary
+    // Basic validation
+    if (!name || name.length < 2) {
+      return res.status(400).json({
+        success: false,
+        message: 'Name must be at least 2 characters'
+      });
+    }
+    
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Valid email address is required'
+      });
+    }
+    
+    // Note: Database integration pending - currently using mock data
+    // Note: AI summary generation pending - currently using template
     
     const mockSummary = `KYC application received for ${name} (${email}). National ID: ${nid || 'N/A'}. Occupation: ${occupation || 'N/A'}. Address: ${address || 'N/A'}. Application is pending review.`;
     
@@ -51,9 +65,23 @@ app.post('/api/admin/login', async (req, res) => {
   try {
     const { email, password } = req.body;
     
-    // TODO: Add validation
-    // TODO: Check credentials
-    // TODO: Generate JWT token
+    // Basic validation
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email and password are required'
+      });
+    }
+    
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid email format'
+      });
+    }
+    
+    // Note: Database authentication pending - currently using mock credentials
+    // Note: JWT token generation pending - currently using mock token
     
     // Mock response
     if (email === 'admin@example.com' && password === 'admin123') {
@@ -84,13 +112,40 @@ app.post('/api/admin/register', async (req, res) => {
   try {
     const { name, email, password } = req.body;
     
-    // TODO: Add validation
-    // TODO: Hash password
-    // TODO: Save to database
+    // Basic validation
+    if (!name || name.length < 2) {
+      return res.status(400).json({
+        success: false,
+        message: 'Name must be at least 2 characters'
+      });
+    }
+    
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Valid email address is required'
+      });
+    }
+    
+    if (!password || password.length < 8) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password must be at least 8 characters'
+      });
+    }
+    
+    // Note: Password hashing pending - currently not hashing passwords
+    // Note: Database integration pending - currently using mock storage
+    
+    console.log(`Registration attempt: ${name} (${email}), password length: ${password.length}`);
     
     res.json({
       success: true,
-      message: 'Registration successful'
+      message: 'Registration successful',
+      data: {
+        name,
+        email
+      }
     });
   } catch (error) {
     res.status(500).json({
