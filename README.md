@@ -25,23 +25,6 @@ A modern, full-stack Know Your Customer (KYC) application with **MongoDB databas
 
 EKYC System is an enterprise-grade solution designed for organizations requiring robust customer verification and data management. The system features a modern React frontend with TypeScript, styled with Tailwind CSS, and a powerful Express.js backend API with MongoDB Atlas database integration for efficient data storage and retrieval.
 
-## 🎨 UI Demo
-
-![EKYC Modern UI](https://raw.githubusercontent.com/Shahriarin2garden/EKYC-Theme/master/docs/screenshots/kyc-form-demo.png)
-
-*Modern, intuitive KYC form featuring glassmorphism effects, gradient backgrounds, and smooth animations*
-
-### 🌟 UI Highlights
-
-- **Modern Design Language** - Inspired by top-tier SaaS platforms like Stripe and Linear
-- **Glassmorphism Effects** - Beautiful frosted glass UI components with backdrop blur
-- **Gradient Animations** - Dynamic color transitions and shimmer effects
-- **Micro-interactions** - Smooth hover states, focus rings, and button animations
-- **Responsive Layout** - Mobile-first design that works on all devices
-- **Accessibility** - WCAG compliant with proper focus states and ARIA labels
-- **Performance** - Optimized animations with GPU acceleration
-- **Dark Patterns** - Subtle decorative elements and floating backgrounds
-
 ### Key Capabilities
 
 - **🗄️ MongoDB Integration** - Cloud-based MongoDB Atlas for scalable data storage
@@ -223,23 +206,7 @@ npm start
 
 You should see the backend connected to MongoDB Atlas with a success message!
 
-## � More Screenshots
-
-<details>
-<summary>Click to see more UI screenshots</summary>
-
-### Admin Login
-*Coming soon - Modern admin authentication page with gradient effects*
-
-### Admin Dashboard
-*Coming soon - Comprehensive dashboard with statistics and KYC management*
-
-### Mobile Responsive View
-*Coming soon - Mobile-optimized interface for on-the-go access*
-
-</details>
-
-## �📁 Project Structure
+## 📁 Project Structure
 
 ```
 EKYC-Theme/
