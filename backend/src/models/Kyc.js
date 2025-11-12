@@ -69,6 +69,22 @@ const kycSchema = new mongoose.Schema({
   reviewNotes: {
     type: String,
     trim: true
+  },
+  
+  // PDF Generation
+  pdfPath: {
+    type: String,
+    trim: true
+  },
+  pdfGeneratedAt: {
+    type: Date
+  },
+  pdfError: {
+    type: String,
+    trim: true
+  },
+  pdfErrorAt: {
+    type: Date
   }
 }, {
   timestamps: true, // Automatically manage createdAt and updatedAt

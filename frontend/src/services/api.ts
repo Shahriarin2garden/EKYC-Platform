@@ -72,4 +72,37 @@ export const adminApi = {
     apiClient.get<ApiResponse>('/admin/me'),
 };
 
+// PDF API endpoints
+export const pdfApi = {
+  generate: (kycId: string, priority: number = 5) => 
+    apiClient.post<ApiResponse>(`/admin/kyc/${kycId}/generate-pdf`, { priority }),
+  
+  download: async (kycId: string) => {
+    const response = await apiClient.get(`/admin/kyc/${kycId}/download-pdf`, {
+      responseType: 'blob'
+    });
+    
+    // Create download link
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `kyc_report_${kycId}.pdf`);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+    
+    return response.data;
+  },
+  
+  getStatus: (kycId: string) => 
+    apiClient.get<ApiResponse>(`/admin/kyc/${kycId}/pdf-status`),
+  
+  batchGenerate: (kycIds: string[], priority: number = 3) => 
+    apiClient.post<ApiResponse>('/admin/kyc/batch-generate-pdf', { kycIds, priority }),
+  
+  getQueueStatus: () => 
+    apiClient.get<ApiResponse>('/admin/pdf-queue-status'),
+};
+
 export default apiClient;

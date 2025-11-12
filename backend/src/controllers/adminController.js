@@ -1,4 +1,9 @@
 const Admin = require('../models/Admin');
+const Kyc = require('../models/Kyc');
+const pdfProducer = require('../services/pdfProducer');
+const pdfService = require('../services/pdfService');
+const path = require('path');
+const fs = require('fs');
 
 // Register a new admin
 exports.register = async (req, res) => {
@@ -260,6 +265,256 @@ exports.getAllAdmins = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to retrieve admins',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
+// Generate PDF for a KYC application
+exports.generatePdf = async (req, res) => {
+  try {
+    const { kycId } = req.params;
+    const { priority } = req.body;
+
+    // Validate KYC ID
+    const kyc = await Kyc.findById(kycId);
+    if (!kyc) {
+      return res.status(404).json({
+        success: false,
+        message: 'KYC application not found'
+      });
+    }
+
+    try {
+      // Try to use RabbitMQ if available
+      await pdfProducer.requestPdfGeneration(
+        kycId,
+        req.admin.id,
+        priority || 5
+      );
+
+      res.json({
+        success: true,
+        message: 'PDF generation request queued successfully',
+        data: {
+          kycId,
+          status: 'queued',
+          message: 'PDF is being generated. You can download it once it\'s ready.'
+        }
+      });
+    } catch (queueError) {
+      // Fallback to synchronous PDF generation if RabbitMQ is not available
+      console.log('RabbitMQ not available, generating PDF synchronously...');
+      
+      // Generate PDF synchronously
+      const pdfPath = await pdfService.generateKycPdf(kyc);
+      
+      // Update KYC record
+      kyc.pdfPath = pdfPath;
+      kyc.pdfGeneratedAt = new Date();
+      kyc.pdfError = null;
+      kyc.pdfErrorAt = null;
+      await kyc.save();
+
+      res.json({
+        success: true,
+        message: 'PDF generated successfully',
+        data: {
+          kycId,
+          status: 'completed',
+          pdfPath,
+          generatedAt: kyc.pdfGeneratedAt,
+          message: 'PDF is ready to download.'
+        }
+      });
+    }
+  } catch (error) {
+    console.error('Generate PDF error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to generate PDF',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
+// Download PDF for a KYC application
+exports.downloadPdf = async (req, res) => {
+  try {
+    const { kycId } = req.params;
+
+    // Fetch KYC record
+    const kyc = await Kyc.findById(kycId);
+    if (!kyc) {
+      return res.status(404).json({
+        success: false,
+        message: 'KYC application not found'
+      });
+    }
+
+    // Check if PDF exists
+    if (!kyc.pdfPath || !pdfService.pdfExists(kyc.pdfPath)) {
+      return res.status(404).json({
+        success: false,
+        message: 'PDF not found. Please generate the PDF first.',
+        data: {
+          kycId,
+          pdfGenerated: false
+        }
+      });
+    }
+
+    // Get the filename
+    const filename = path.basename(kyc.pdfPath);
+
+    // Set headers for PDF download
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+
+    // Stream the PDF file
+    const fileStream = fs.createReadStream(kyc.pdfPath);
+    fileStream.pipe(res);
+
+    fileStream.on('error', (error) => {
+      console.error('Error streaming PDF:', error);
+      if (!res.headersSent) {
+        res.status(500).json({
+          success: false,
+          message: 'Failed to download PDF'
+        });
+      }
+    });
+
+  } catch (error) {
+    console.error('Download PDF error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to download PDF',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
+// Get PDF status for a KYC application
+exports.getPdfStatus = async (req, res) => {
+  try {
+    const { kycId } = req.params;
+
+    const kyc = await Kyc.findById(kycId).select('pdfPath pdfGeneratedAt pdfError pdfErrorAt');
+    
+    if (!kyc) {
+      return res.status(404).json({
+        success: false,
+        message: 'KYC application not found'
+      });
+    }
+
+    const status = {
+      kycId,
+      pdfGenerated: !!kyc.pdfPath,
+      pdfPath: kyc.pdfPath,
+      generatedAt: kyc.pdfGeneratedAt,
+      error: kyc.pdfError,
+      errorAt: kyc.pdfErrorAt
+    };
+
+    res.json({
+      success: true,
+      message: 'PDF status retrieved successfully',
+      data: status
+    });
+  } catch (error) {
+    console.error('Get PDF status error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get PDF status',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
+// Batch generate PDFs for multiple KYC applications
+exports.batchGeneratePdf = async (req, res) => {
+  try {
+    const { kycIds, priority } = req.body;
+
+    if (!Array.isArray(kycIds) || kycIds.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'kycIds must be a non-empty array'
+      });
+    }
+
+    try {
+      // Try to use RabbitMQ if available
+      const results = await pdfProducer.requestBatchPdfGeneration(
+        kycIds,
+        req.admin.id,
+        priority || 3
+      );
+
+      res.json({
+        success: true,
+        message: 'Batch PDF generation request queued successfully',
+        data: results
+      });
+    } catch (queueError) {
+      // Fallback to synchronous PDF generation if RabbitMQ is not available
+      console.log('RabbitMQ not available, generating PDFs synchronously...');
+      
+      const results = [];
+      for (const kycId of kycIds) {
+        try {
+          const kyc = await Kyc.findById(kycId);
+          if (!kyc) {
+            results.push({ kycId, success: false, error: 'KYC not found' });
+            continue;
+          }
+
+          const pdfPath = await pdfService.generateKycPdf(kyc);
+          kyc.pdfPath = pdfPath;
+          kyc.pdfGeneratedAt = new Date();
+          kyc.pdfError = null;
+          kyc.pdfErrorAt = null;
+          await kyc.save();
+
+          results.push({ kycId, success: true, status: 'completed' });
+        } catch (error) {
+          results.push({ kycId, success: false, error: error.message });
+        }
+      }
+
+      res.json({
+        success: true,
+        message: 'Batch PDF generation completed',
+        data: results
+      });
+    }
+  } catch (error) {
+    console.error('Batch generate PDF error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to generate PDFs',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
+// Get PDF queue status
+exports.getPdfQueueStatus = async (req, res) => {
+  try {
+    const status = await pdfProducer.getQueueStatus();
+
+    res.json({
+      success: true,
+      message: 'Queue status retrieved successfully',
+      data: status.data
+    });
+  } catch (error) {
+    console.error('Get queue status error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get queue status',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }

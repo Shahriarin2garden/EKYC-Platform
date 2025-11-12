@@ -17,6 +17,7 @@
   "license": "MIT",
   "dependencies": {
     "@openrouter/sdk": "^0.1.10",
+    "amqplib": "^0.10.9",
     "axios": "^1.13.2",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
@@ -25,7 +26,8 @@
     "express-validator": "^7.0.1",
     "jsonwebtoken": "^9.0.2",
     "mongodb": "^7.0.0",
-    "mongoose": "^8.0.0"
+    "mongoose": "^8.0.0",
+    "pdfkit": "^0.17.2"
   },
   "devDependencies": {
     "jest": "^29.7.0",

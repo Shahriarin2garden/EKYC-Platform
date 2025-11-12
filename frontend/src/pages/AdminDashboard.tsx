@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
+import PdfButton from '../components/common/PdfButton';
 
 interface KycApplication {
   _id: string;
@@ -464,6 +465,11 @@ const AdminDashboard: React.FC = () => {
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                             </svg>
                           </button>
+                          <PdfButton
+                            kycId={app._id}
+                            onSuccess={() => showNotification('success', 'PDF action completed successfully!')}
+                            onError={(error) => showNotification('error', error)}
+                          />
                           <button
                             onClick={() => updateStatus(app._id, 'approved')}
                             className={`w-9 h-9 bg-green-500 hover:bg-green-600 text-white rounded-xl flex items-center justify-center transition-all duration-200 transform hover:scale-110 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none ${

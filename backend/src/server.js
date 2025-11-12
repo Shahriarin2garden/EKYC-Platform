@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const connectDB = require('./config/database');
+const pdfWorker = require('./services/pdfWorker');
 
 // Load environment variables
 dotenv.config();
@@ -24,6 +25,13 @@ process.on('unhandledRejection', (err) => {
 // Connect to MongoDB (async but non-blocking)
 connectDB().catch(err => {
   console.error('Failed to connect to MongoDB:', err.message);
+});
+
+// Start PDF Worker (RabbitMQ consumer)
+// This will connect to RabbitMQ and start listening for PDF generation requests
+pdfWorker.startPdfWorker().catch(err => {
+  console.error('Failed to start PDF Worker:', err.message);
+  console.log('PDF generation will not be available. Make sure RabbitMQ is running.');
 });
 
 const app = express();
@@ -76,9 +84,33 @@ app.use((req, res) => {
 
 // Start server
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`EKYC API Server running on port ${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`PDF Worker: ${process.env.RABBITMQ_URL ? 'Enabled' : 'Disabled (RabbitMQ URL not configured)'}`);
+});
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('SIGTERM signal received: closing HTTP server and PDF Worker');
+  server.close(() => {
+    console.log('HTTP server closed');
+    pdfWorker.stopPdfWorker().then(() => {
+      console.log('PDF Worker stopped');
+      process.exit(0);
+    });
+  });
+});
+
+process.on('SIGINT', () => {
+  console.log('SIGINT signal received: closing HTTP server and PDF Worker');
+  server.close(() => {
+    console.log('HTTP server closed');
+    pdfWorker.stopPdfWorker().then(() => {
+      console.log('PDF Worker stopped');
+      process.exit(0);
+    });
+  });
 });
 
 module.exports = app;
