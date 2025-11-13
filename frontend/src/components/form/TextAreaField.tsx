@@ -36,7 +36,7 @@ const TextAreaField: React.FC<TextAreaFieldProps> = ({
     const baseClasses = 'w-full px-5 py-4 border-2 rounded-2xl transition-all duration-300 outline-none resize-none font-medium text-gray-900 placeholder:text-gray-400 placeholder:font-normal';
     
     if (isFocused) {
-      return `${baseClasses} border-blue-500 bg-blue-50/50 shadow-lg shadow-blue-100/50 ring-4 ring-blue-100`;
+      return `${baseClasses} border-blue-400 bg-blue-50/30 shadow-md shadow-blue-100/50 ring-2 ring-blue-200/50`;
     }
     if (hasValue) {
       return `${baseClasses} border-gray-300 bg-gray-50/50 hover:border-gray-400`;
@@ -74,9 +74,9 @@ const TextAreaField: React.FC<TextAreaFieldProps> = ({
           placeholder={placeholder}
         />
         
-        {/* Focus Ring Effect */}
+        {/* Focus Ring Effect - Subtle and non-distracting */}
         {isFocused && (
-          <div className="absolute inset-0 -m-1 rounded-2xl bg-gradient-to-r from-blue-500 to-purple-500 opacity-20 blur-xl animate-pulse-slow pointer-events-none"></div>
+          <div className="absolute inset-0 -m-1 rounded-2xl bg-blue-400 opacity-10 blur-lg pointer-events-none"></div>
         )}
 
         {/* Character Count Progress Bar */}

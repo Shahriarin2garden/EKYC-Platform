@@ -41,7 +41,7 @@ const InputField: React.FC<InputFieldProps> = ({
       return `${baseClasses} border-red-400 bg-red-50/50 focus:border-red-500 focus:bg-red-50 focus:ring-4 focus:ring-red-100`;
     }
     if (isFocused) {
-      return `${baseClasses} border-blue-500 bg-blue-50/50 shadow-lg shadow-blue-100/50 ring-4 ring-blue-100`;
+      return `${baseClasses} border-blue-400 bg-blue-50/30 shadow-md shadow-blue-100/50 ring-2 ring-blue-200/50`;
     }
     if (isValid && showSuccessIcon) {
       return `${baseClasses} border-green-400 bg-green-50/30 hover:border-green-500`;
@@ -96,9 +96,9 @@ const InputField: React.FC<InputFieldProps> = ({
           </div>
         )}
 
-        {/* Focus Ring Effect */}
+        {/* Focus Ring Effect - Subtle and non-distracting */}
         {isFocused && !error && (
-          <div className="absolute inset-0 -m-1 rounded-2xl bg-gradient-to-r from-blue-500 to-purple-500 opacity-20 blur-xl animate-pulse-slow pointer-events-none"></div>
+          <div className="absolute inset-0 -m-1 rounded-2xl bg-blue-400 opacity-10 blur-lg pointer-events-none"></div>
         )}
       </div>
       

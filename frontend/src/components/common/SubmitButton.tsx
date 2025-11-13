@@ -17,33 +17,40 @@ const SubmitButton: React.FC<SubmitButtonProps> = ({
 
   return (
     <div className="relative group">
-      {/* Glow effect behind button */}
+      {/* Subtle glow effect behind button - only on hover */}
       {!isDisabled && (
-        <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 rounded-2xl blur-lg opacity-50 group-hover:opacity-75 transition duration-300 animate-pulse-slow"></div>
+        <div className="absolute -inset-1 bg-gradient-to-r from-blue-500 via-blue-600 to-purple-600 rounded-2xl blur-lg opacity-0 group-hover:opacity-40 transition-all duration-500"></div>
       )}
       
       <button
         type={type}
         disabled={isDisabled}
-        className={`relative w-full py-5 px-8 rounded-2xl font-bold text-lg text-white shadow-2xl transform transition-all duration-300 overflow-hidden ${
-          isDisabled
+        className={`relative w-full py-5 px-8 rounded-2xl font-bold text-lg text-white shadow-xl transform transition-all duration-300 overflow-hidden ${
+          loading
+            ? 'bg-gradient-to-r from-blue-500 to-blue-600 cursor-wait'
+            : isDisabled
             ? 'bg-gray-400 cursor-not-allowed opacity-60'
-            : 'btn-gradient hover:scale-[1.02] hover:shadow-glow-lg active:scale-[0.98] animate-gradient'
+            : 'btn-gradient hover:scale-[1.02] hover:shadow-2xl active:scale-[0.98]'
         }`}
       >
-        {/* Shimmer effect */}
+        {/* Shimmer effect - only when not loading */}
         {!isDisabled && !loading && (
-          <div className="absolute inset-0 bg-shimmer opacity-30 animate-shimmer pointer-events-none"></div>
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 pointer-events-none"></div>
+        )}
+        
+        {/* Loading state with progress indicator */}
+        {loading && (
+          <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 via-purple-600/30 to-blue-600/20 animate-shimmer pointer-events-none"></div>
         )}
         
         {loading ? (
           <span className="flex items-center justify-center">
             {/* Enhanced Loading Spinner */}
-            <div className="relative w-6 h-6 mr-3">
-              <div className="absolute inset-0 border-4 border-white/30 rounded-full"></div>
-              <div className="absolute inset-0 border-4 border-transparent border-t-white rounded-full animate-spin"></div>
+            <div className="relative w-7 h-7 mr-3">
+              <div className="absolute inset-0 border-4 border-white/20 rounded-full"></div>
+              <div className="absolute inset-0 border-4 border-transparent border-t-white border-r-white rounded-full animate-spin"></div>
             </div>
-            <span className="animate-pulse">Processing with AI...</span>
+            <span className="font-semibold">Processing with AI...</span>
           </span>
         ) : (
           children || (
