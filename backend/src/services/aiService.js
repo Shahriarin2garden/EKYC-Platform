@@ -1,5 +1,4 @@
-const { OpenRouter } = require('@openrouter/sdk');
-const logger = require('../config/logger');
+﻿const logger = require('../config/logger');
 
 /**
  * AI Service for generating KYC application summaries using OpenRouter
@@ -18,18 +17,45 @@ class AIService {
     // - 'meta-llama/llama-3.1-8b-instruct:free' (Free, latest Llama)
     this.model = process.env.OPENROUTER_MODEL || 'meta-llama/llama-3.1-8b-instruct:free';
     
-    // Initialize OpenRouter SDK client
-    if (this.apiKey) {
-      this.client = new OpenRouter({
-        apiKey: this.apiKey,
-        defaultHeaders: {
-          'HTTP-Referer': process.env.APP_URL || 'http://localhost:3000',
-          'X-Title': 'EKYC System',
-        },
-      });
-    } else {
-      this.client = null;
+    // Lazy-load OpenRouter SDK (will be initialized on first use)
+    this.client = null;
+    this.clientPromise = null;
+  }
+
+  /**
+   * Lazy-load OpenRouter SDK using dynamic import
+   * This is necessary because @openrouter/sdk is an ES module
+   */
+  async getClient() {
+    if (!this.apiKey) {
+      return null;
     }
+
+    if (this.client) {
+      return this.client;
+    }
+
+    if (!this.clientPromise) {
+      this.clientPromise = (async () => {
+        try {
+          const { OpenRouter } = await import('@openrouter/sdk');
+          this.client = new OpenRouter({
+            apiKey: this.apiKey,
+            defaultHeaders: {
+              'HTTP-Referer': process.env.APP_URL || 'http://localhost:3000',
+              'X-Title': 'EKYC System',
+            },
+          });
+          return this.client;
+        } catch (error) {
+          logger.error('Failed to load OpenRouter SDK', { error: error.message });
+          this.clientPromise = null;
+          return null;
+        }
+      })();
+    }
+
+    return this.clientPromise;
   }
 
   /**
@@ -52,10 +78,18 @@ class AIService {
     }
 
     try {
+      // Get the OpenRouter client (lazy-loaded)
+      const client = await this.getClient();
+      
+      if (!client) {
+        logger.warn('OpenRouter client not available. Using basic summary.');
+        return this.generateBasicSummary(kycData);
+      }
+
       const prompt = this.buildPrompt(kycData);
       
       // Use OpenRouter SDK to send chat completion request
-      const response = await this.client.chat.send({
+      const response = await client.chat.send({
         model: this.model,
         messages: [
           {
@@ -118,20 +152,20 @@ Keep the summary concise (3-4 paragraphs), professional, and actionable. Use cle
     const completeness = this.calculateCompleteness(kycData);
     const riskLevel = this.assessBasicRisk(kycData);
     
-    return `📋 KYC Application Summary
+    return ` KYC Application Summary
 
-👤 Applicant: ${kycData.name} (${kycData.email})
+ Applicant: ${kycData.name} (${kycData.email})
 
-📊 Profile Completeness: ${completeness.percentage}% (${completeness.complete}/${completeness.total} fields)
+ Profile Completeness: ${completeness.percentage}% (${completeness.complete}/${completeness.total} fields)
 
-${kycData.nid ? `🆔 National ID: ${kycData.nid}` : '⚠️  National ID: Not provided'}
-${kycData.occupation ? `💼 Occupation: ${kycData.occupation}` : '⚠️  Occupation: Not provided'}
-${kycData.address ? `📍 Address: ${kycData.address}` : '⚠️  Address: Not provided'}
+${kycData.nid ? ` National ID: ${kycData.nid}` : '  National ID: Not provided'}
+${kycData.occupation ? ` Occupation: ${kycData.occupation}` : '  Occupation: Not provided'}
+${kycData.address ? ` Address: ${kycData.address}` : '  Address: Not provided'}
 
-⚡ Initial Risk Level: ${riskLevel.level}
+ Initial Risk Level: ${riskLevel.level}
 ${riskLevel.reason}
 
-📌 Next Steps:
+ Next Steps:
 - ${completeness.percentage === 100 ? 'Proceed with document verification' : 'Request missing information'}
 - Verify identity documents
 - Conduct background screening
@@ -168,17 +202,17 @@ Submitted: ${new Date(kycData.submittedAt || Date.now()).toLocaleDateString('en-
     
     if (completeness.percentage === 100) {
       return {
-        level: 'LOW ✅',
+        level: 'LOW ',
         reason: 'All required information provided. Standard verification process recommended.'
       };
     } else if (completeness.percentage >= 60) {
       return {
-        level: 'MEDIUM ⚠️',
+        level: 'MEDIUM ',
         reason: 'Some information missing. Request additional details before proceeding.'
       };
     } else {
       return {
-        level: 'HIGH ⛔',
+        level: 'HIGH ',
         reason: 'Critical information missing. Cannot proceed without complete application.'
       };
     }
