@@ -1,0 +1,67 @@
+# Render.com Blueprint Configuration
+# This file defines the infrastructure for deploying EKYC Platform on Render.com
+
+services:
+  # Backend API Service
+  - type: web
+    name: ekyc-backend
+    env: node
+    region: oregon
+    plan: free
+    buildCommand: cd backend && npm install
+    startCommand: cd backend && npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5000
+      - key: MONGODB_URI
+        fromDatabase:
+          name: ekyc-mongodb
+          property: connectionString
+      - key: RABBITMQ_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: FRONTEND_URL
+        fromService:
+          type: web
+          name: ekyc-frontend
+          property: url
+      - key: OPENROUTER_API_KEY
+        sync: false
+    healthCheckPath: /api/health
+    autoDeploy: true
+
+  # Frontend React Application
+  - type: web
+    name: ekyc-frontend
+    env: static
+    region: oregon
+    plan: free
+    buildCommand: cd frontend && npm install && REACT_APP_API_URL=$BACKEND_URL npm run build
+    staticPublishPath: ./frontend/build
+    envVars:
+      - key: REACT_APP_API_URL
+        fromService:
+          type: web
+          name: ekyc-backend
+          envVarKey: RENDER_EXTERNAL_URL
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    autoDeploy: true
+
+databases:
+  # MongoDB Database
+  - name: ekyc-mongodb
+    plan: free
+    databaseName: ekyc_db
+    user: ekyc_user
+
+# Note: RabbitMQ is not available on Render free tier
+# You'll need to use a free RabbitMQ service like CloudAMQP
+# Sign up at: https://www.cloudamqp.com/
