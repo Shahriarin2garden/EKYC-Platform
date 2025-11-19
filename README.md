@@ -30,7 +30,9 @@ EKYC System is an enterprise-grade solution designed for organizations requiring
 
 Watch a complete demonstration of the EKYC Platform in action:
 
-**[📹 Download Demo Video](https://github.com/Shahriarin2garden/EKYC-Platform/raw/master/demos/ekyc-demo.mp4)**
+<video src="https://github.com/Shahriarin2garden/EKYC-Platform/assets/demos/ekyc-demo.mp4" controls width="100%">
+  Your browser does not support the video tag. <a href="https://github.com/Shahriarin2garden/EKYC-Platform/raw/master/demos/ekyc-demo.mp4">Download the demo video</a>
+</video>
 
 The demo showcases:
 - Modern UI with glassmorphism effects and smooth animations
@@ -39,8 +41,6 @@ The demo showcases:
 - Application management and status updates
 - PDF generation and download functionality
 - AI-powered summary generation
-
-> **Note:** Click the link above to download the demo video. The video is also available in the `demos/` folder when you clone the repository.
 
 ### Key Capabilities
 
