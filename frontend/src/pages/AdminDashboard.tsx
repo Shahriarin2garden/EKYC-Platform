@@ -303,7 +303,7 @@ const AdminDashboard: React.FC = () => {
         </div>
 
         {/* KYC Applications Table */}
-        <div className="card-3d overflow-hidden">
+        <div className="bg-white dark:bg-gradient-to-br dark:from-brand-dark/95 dark:to-brand-darker/95 border border-gray-200 dark:border-brand-gray/20 rounded-3xl transition-all duration-700 hover:border-blue-300 dark:hover:border-brand-accent/40 dark:shadow-3d dark:hover:shadow-3d-hover hover:-translate-y-3 dark:hover:scale-[1.02] relative backdrop-blur-xl">
           <div className="px-6 py-4 border-b border-gray-200 dark:border-brand-gray/20 flex justify-between items-center bg-gradient-to-r from-transparent via-transparent to-blue-500/5 dark:to-brand-accent/5">
             <h2 className="text-lg font-bold text-gray-900 dark:text-brand-white">Applications</h2>
             <span className="px-3 py-1 rounded-full bg-blue-50 dark:bg-brand-white/5 border border-blue-200 dark:border-brand-white/10 text-xs font-medium text-blue-700 dark:text-brand-white/70 shadow-sm dark:shadow-inner-glow">
