@@ -91,7 +91,8 @@ app.use((req, res) => {
 
 // Start server
 const PORT = process.env.PORT || 5000;
-const server = app.listen(PORT, () => {
+const HOST = process.env.HOST || '0.0.0.0';
+const server = app.listen(PORT, HOST, () => {
   logger.info(`EKYC API Server running on port ${PORT}`);
   logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
   logger.info(`PDF Worker: ${process.env.RABBITMQ_URL ? 'Enabled' : 'Disabled (RabbitMQ URL not configured)'}`);
