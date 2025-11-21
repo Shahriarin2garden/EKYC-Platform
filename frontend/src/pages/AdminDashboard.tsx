@@ -356,17 +356,19 @@ const AdminDashboard: React.FC = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-brand-white/70">
                         {new Date(app.submittedAt).toLocaleDateString()}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <div className="flex items-center space-x-2">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center space-x-2 relative z-10">
                           <button
                             onClick={(e) => {
+                              e.preventDefault();
                               e.stopPropagation();
                               console.log('View Details button clicked for:', app._id);
                               viewDetails(app);
                             }}
-                            className="p-2 text-brand-white/70 hover:text-brand-white hover:bg-brand-white/10 rounded-lg transition-colors cursor-pointer"
+                            className="p-2 text-brand-white/70 hover:text-brand-white hover:bg-brand-white/10 rounded-lg transition-colors cursor-pointer relative z-20"
                             title="View Details"
                             type="button"
+                            style={{ pointerEvents: 'auto' }}
                           >
                             <svg className="w-5 h-5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -374,26 +376,30 @@ const AdminDashboard: React.FC = () => {
                             </svg>
                           </button>
                           
-                          <div className="h-4 w-px bg-brand-gray/30 mx-1"></div>
+                          <div className="h-4 w-px bg-brand-gray/30 mx-1 pointer-events-none"></div>
 
-                          <PdfButton
-                            kycId={app._id}
-                            onSuccess={() => showNotification('success', 'PDF generated')}
-                            onError={(error) => showNotification('error', error)}
-                          />
+                          <div className="relative z-20" style={{ pointerEvents: 'auto' }}>
+                            <PdfButton
+                              kycId={app._id}
+                              onSuccess={() => showNotification('success', 'PDF generated')}
+                              onError={(error) => showNotification('error', error)}
+                            />
+                          </div>
 
-                          <div className="h-4 w-px bg-brand-gray/30 mx-1"></div>
+                          <div className="h-4 w-px bg-brand-gray/30 mx-1 pointer-events-none"></div>
 
                           <button
                             onClick={(e) => {
+                              e.preventDefault();
                               e.stopPropagation();
                               console.log('Approve button clicked for:', app._id);
                               updateStatus(app._id, 'approved');
                             }}
                             disabled={updatingStatus === app._id || app.status === 'approved'}
-                            className="p-2 text-green-400 hover:bg-green-400/10 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                            className="p-2 text-green-400 hover:bg-green-400/10 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer relative z-20"
                             title="Approve"
                             type="button"
+                            style={{ pointerEvents: 'auto' }}
                           >
                             <svg className="w-5 h-5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 13l4 4L19 7" />
@@ -401,14 +407,16 @@ const AdminDashboard: React.FC = () => {
                           </button>
                           <button
                             onClick={(e) => {
+                              e.preventDefault();
                               e.stopPropagation();
                               console.log('Reject button clicked for:', app._id);
                               updateStatus(app._id, 'rejected');
                             }}
                             disabled={updatingStatus === app._id || app.status === 'rejected'}
-                            className="p-2 text-red-400 hover:bg-red-400/10 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                            className="p-2 text-red-400 hover:bg-red-400/10 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer relative z-20"
                             title="Reject"
                             type="button"
+                            style={{ pointerEvents: 'auto' }}
                           >
                             <svg className="w-5 h-5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
@@ -440,8 +448,17 @@ const AdminDashboard: React.FC = () => {
           <div className="bg-white dark:bg-[#0a0a0a] border border-gray-300 dark:border-brand-gray/30 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="sticky top-0 bg-white/95 dark:bg-[#0a0a0a]/95 backdrop-blur-sm px-6 py-4 border-b border-gray-200 dark:border-brand-gray/20 flex justify-between items-center z-10">
               <h3 className="text-lg font-bold text-gray-900 dark:text-brand-white">Application Details</h3>
-              <button onClick={closeModal} className="text-brand-white/50 hover:text-brand-white transition-colors">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <button 
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  closeModal();
+                }} 
+                className="text-brand-white/50 hover:text-brand-white transition-colors cursor-pointer"
+                type="button"
+                style={{ pointerEvents: 'auto' }}
+              >
+                <svg className="w-6 h-6 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
@@ -484,7 +501,9 @@ const AdminDashboard: React.FC = () => {
                   <div className="flex items-center justify-between mb-4 border-b border-brand-gray/20 pb-2">
                     <h4 className="text-xs font-bold uppercase tracking-wider text-brand-white/50">AI Analysis</h4>
                     <button
-                      onClick={async () => {
+                      onClick={async (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
                         if (!globalThis.confirm('Regenerate AI summary?')) return;
                         try {
                           const token = localStorage.getItem('token');
@@ -505,6 +524,7 @@ const AdminDashboard: React.FC = () => {
                       }}
                       className="text-xs text-brand-accent hover:text-brand-white transition-colors cursor-pointer"
                       type="button"
+                      style={{ pointerEvents: 'auto' }}
                     >
                       Regenerate
                     </button>
@@ -518,7 +538,9 @@ const AdminDashboard: React.FC = () => {
               {/* Actions */}
               <div className="flex items-center justify-end space-x-3 pt-4 border-t border-brand-gray/20">
                 <button
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
                     console.log('Modal Approve clicked for:', selectedApplication._id);
                     updateStatus(selectedApplication._id, 'approved');
                     closeModal();
@@ -526,11 +548,14 @@ const AdminDashboard: React.FC = () => {
                   disabled={selectedApplication.status === 'approved'}
                   className="px-4 py-2 bg-green-500/10 text-green-400 border border-green-500/20 rounded-lg hover:bg-green-500/20 disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-sm font-bold cursor-pointer"
                   type="button"
+                  style={{ pointerEvents: 'auto' }}
                 >
                   Approve
                 </button>
                 <button
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
                     console.log('Modal Reject clicked for:', selectedApplication._id);
                     updateStatus(selectedApplication._id, 'rejected');
                     closeModal();
@@ -538,16 +563,20 @@ const AdminDashboard: React.FC = () => {
                   disabled={selectedApplication.status === 'rejected'}
                   className="px-4 py-2 bg-red-500/10 text-red-400 border border-red-500/20 rounded-lg hover:bg-red-500/20 disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-sm font-bold cursor-pointer"
                   type="button"
+                  style={{ pointerEvents: 'auto' }}
                 >
                   Reject
                 </button>
                 <button
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
                     console.log('Modal Close clicked');
                     closeModal();
                   }}
                   className="px-4 py-2 bg-brand-white/5 text-brand-white border border-brand-white/10 rounded-lg hover:bg-brand-white/10 transition-colors text-sm font-bold cursor-pointer"
                   type="button"
+                  style={{ pointerEvents: 'auto' }}
                 >
                   Close
                 </button>
